@@ -52,7 +52,7 @@ jobs:
         run: pnpm build
 
       - name: Package
-        run: pnpm exec electron-builder ${{ matrix.builder_args }} --config electron-builder.json
+        run: pnpm exec electron-builder ${{ matrix.builder_args }} --config electron-builder.json --publish never
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
