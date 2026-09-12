@@ -2,7 +2,9 @@
 
 透明置顶的桌面宠物，支持 **macOS** 与 **Windows**。默认自带「线条小狗」表情包，也可在设置里换自己的 GIF/PNG。
 
-![应用图标](./build/icon.png)
+<p align="center">
+  <img src="./build/icon.png" width="96" height="96" alt="DeskPet 图标">
+</p>
 
 ## 下载
 
