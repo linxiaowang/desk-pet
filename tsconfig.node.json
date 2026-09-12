@@ -1,0 +1,21 @@
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
+  "compilerOptions": {
+    "composite": true,
+    "baseUrl": ".",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@shared/*": ["src/shared/*"]
+    },
+    "strict": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true
+  },
+  "include": [
+    "electron.vite.config.ts",
+    "src/main/**/*.ts",
+    "src/preload/**/*.ts",
+    "src/shared/**/*.ts",
+    "scripts/**/*.ts"
+  ]
+}

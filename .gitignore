@@ -1,0 +1,9 @@
+node_modules
+dist
+out
+release
+*.tsbuildinfo
+*.log
+.DS_Store
+auto-imports.d.ts
+src/renderer/auto-imports.d.ts

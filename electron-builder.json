@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/app-builder-lib/scheme.json",
+  "appId": "dev.deskpet.app",
+  "productName": "DeskPet",
+  "asar": true,
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "out"
+  ],
+  "extraResources": [
+    {
+      "from": "resources/pets",
+      "to": "pets"
+    }
+  ],
+  "mac": {
+    "identity": null,
+    "target": [
+      "dmg"
+    ],
+    "artifactName": "${productName}-Mac-${version}.${ext}"
+  },
+  "win": {
+    "target": [
+      "portable"
+    ],
+    "artifactName": "${productName}-Windows-${version}.${ext}"
+  }
+}

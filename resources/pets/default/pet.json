@@ -1,0 +1,9 @@
+{
+  "name": "线条小狗",
+  "states": {
+    "idle": "idle.gif",
+    "hover": "hover.gif",
+    "clicked": "clicked.gif",
+    "dragging": "dragging.gif"
+  }
+}
