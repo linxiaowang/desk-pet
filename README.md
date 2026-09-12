@@ -8,14 +8,24 @@
 
 ## 下载
 
-无需克隆仓库或自己打包，直接到 **Releases** 页下载：
+点下面按钮即可下载**当前最新版**（链到 [Releases](https://github.com/linxiaowang/desk-pet/releases/latest) 里的安装包）：
 
-**[➡️ GitHub Releases](https://github.com/linxiaowang/desk-pet/releases)**
+<p align="center">
+  <a href="https://github.com/linxiaowang/desk-pet/releases/latest/download/DeskPet-Mac.dmg">
+    <img src="https://img.shields.io/badge/macOS-下载%20DMG-000000?style=for-the-badge&logo=apple&logoColor=white" alt="下载 macOS 版">
+  </a>
+  &nbsp;
+  <a href="https://github.com/linxiaowang/desk-pet/releases/latest/download/DeskPet-Windows.exe">
+    <img src="https://img.shields.io/badge/Windows-下载%20EXE-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="下载 Windows 版">
+  </a>
+</p>
 
-| 平台 | 文件 | 说明 |
-|------|------|------|
-| macOS | `DeskPet-Mac-x.x.x.dmg` | 打开 DMG，把应用拖入「应用程序」 |
-| Windows | `DeskPet-Windows-x.x.x.exe` | 便携版，双击运行（无需安装） |
+| 平台 | 安装包 | 说明 |
+|------|--------|------|
+| macOS | [DeskPet-Mac.dmg](https://github.com/linxiaowang/desk-pet/releases/latest/download/DeskPet-Mac.dmg) | 打开 DMG，拖入「应用程序」 |
+| Windows | [DeskPet-Windows.exe](https://github.com/linxiaowang/desk-pet/releases/latest/download/DeskPet-Windows.exe) | 便携版，双击运行 |
+
+也可以打开 **[Releases 页面](https://github.com/linxiaowang/desk-pet/releases/latest)** 查看版本说明与历史版本。
 
 > 安装包**未做代码签名**。macOS 可能提示「无法验证开发者」；Windows 可能触发 SmartScreen，需选择仍要打开。仅建议自用或信任来源的测试。
 

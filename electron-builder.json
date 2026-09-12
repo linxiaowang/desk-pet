@@ -21,12 +21,12 @@
     "target": [
       "dmg"
     ],
-    "artifactName": "${productName}-Mac-${version}.${ext}"
+    "artifactName": "${productName}-Mac.${ext}"
   },
   "win": {
     "target": [
       "portable"
     ],
-    "artifactName": "${productName}-Windows-${version}.${ext}"
+    "artifactName": "${productName}-Windows.${ext}"
   }
 }
