@@ -3,6 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron'
+import { appIconPath, applyAppIcon } from './app-icon'
 import { readPersist, writePersist } from './config'
 import { bundledPetsDir, ensureUserPetsDir, listPets, loadPetById, toPayload } from './pets'
 import { openSettingsWindow, registerSettingsIpc } from './settings-window'
@@ -118,6 +119,7 @@ function createWindow(): void {
     y: start.y,
     width: 128,
     height: 128,
+    icon: appIconPath(),
     show: true,
     frame: false,
     transparent: true,
@@ -166,6 +168,7 @@ if (!app.requestSingleInstanceLock()) {
 
 app.whenReady().then(() => {
   ensureUserPetsDir()
+  applyAppIcon()
   registerSettingsIpc(settingsHost)
 
   ipcMain.handle('pet:get', () => {

@@ -2,6 +2,7 @@
   "$schema": "./node_modules/app-builder-lib/scheme.json",
   "appId": "dev.deskpet.app",
   "productName": "DeskPet",
+  "icon": "build/icon.png",
   "asar": true,
   "directories": {
     "output": "release"

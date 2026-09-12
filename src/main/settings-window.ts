@@ -3,6 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { appIconPath } from './app-icon'
 import { getMaxPetEdge, setMaxPetEdge } from './config'
 import {
   deleteUserPet,
@@ -47,6 +48,7 @@ export function openSettingsWindow(host: SettingsHost): void {
     minWidth: 420,
     minHeight: 520,
     title: 'DeskPet 设置',
+    icon: appIconPath(),
     show: false,
     webPreferences: {
       preload: host.preloadPath,
