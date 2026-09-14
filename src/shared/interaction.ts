@@ -15,13 +15,26 @@ export interface InteractionConfig {
   idleQuotes: string[]
 }
 
+export type BubbleKind = 'click' | 'hover' | 'idle' | 'reminder'
+
 export interface BubblePayload {
   text: string
-  durationMs: number
+  kind: BubbleKind
+  /** 覆盖默认展示时长（不含进出场动画） */
+  durationMs?: number
 }
 
-export const BUBBLE_BAR_HEIGHT = 56
-export const DEFAULT_BUBBLE_DURATION_MS = 8000
+export const BUBBLE_BAR_HEIGHT = 72
+
+/** 进 / 出场 CSS 动画约 220ms，逻辑里单独计算 */
+export const BUBBLE_ANIM_MS = 220
+
+export const BUBBLE_TIMING: Record<BubbleKind, { showDelay: number, visible: number, minVisible: number }> = {
+  click: { showDelay: 140, visible: 4200, minVisible: 1300 },
+  hover: { showDelay: 0, visible: 3400, minVisible: 1000 },
+  idle: { showDelay: 220, visible: 5200, minVisible: 1800 },
+  reminder: { showDelay: 280, visible: 9200, minVisible: 2800 },
+}
 
 export const DEFAULT_INTERACTION: InteractionConfig = {
   reminderEnabled: false,

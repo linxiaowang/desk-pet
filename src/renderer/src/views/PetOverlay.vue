@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { LoadedPetPayload, PetState } from '@shared/pet'
-import { BUBBLE_BAR_HEIGHT } from '@shared/interaction'
+import type { BubbleKind, BubblePayload } from '@shared/interaction'
+import { BUBBLE_BAR_HEIGHT, BUBBLE_TIMING } from '@shared/interaction'
 import { ALPHA_HIT_THRESHOLD, CLICKED_STATIC_MS, DEFAULT_MAX_PET_EDGE, DRAG_THRESHOLD_PX } from '@shared/pet'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
@@ -11,6 +12,11 @@ const imgRef = ref<HTMLImageElement | null>(null)
 const displayW = ref(128)
 const displayH = ref(128)
 const bubbleText = ref('')
+const bubbleShowing = ref(false)
+const currentBubbleKind = ref<BubbleKind | null>(null)
+
+const HOVER_QUOTE_DELAY_MS = 580
+const CLICK_QUOTE_DELAY_MS = 160
 
 const src = computed(() => {
   if (!pet.value)
@@ -30,32 +36,113 @@ const WINDOW_LEAVE_DEBOUNCE_MS = 64
 let lastOverSolid = false
 let ignoreMouseApplied: boolean | null = null
 let raf = 0
-let bubbleTimer: ReturnType<typeof setTimeout> | undefined
+let bubbleShowDelayTimer: ReturnType<typeof setTimeout> | undefined
+let bubbleHideTimer: ReturnType<typeof setTimeout> | undefined
+let hoverQuoteDelayTimer: ReturnType<typeof setTimeout> | undefined
 let offBubble: (() => void) | undefined
+
+function bubblePriority(kind: BubbleKind): number {
+  const order: Record<BubbleKind, number> = { reminder: 4, click: 3, hover: 2, idle: 1 }
+  return order[kind]
+}
+
+function clearBubbleHideTimer(): void {
+  if (bubbleHideTimer) {
+    clearTimeout(bubbleHideTimer)
+    bubbleHideTimer = undefined
+  }
+}
+
+function clearBubbleShowDelay(): void {
+  if (bubbleShowDelayTimer) {
+    clearTimeout(bubbleShowDelayTimer)
+    bubbleShowDelayTimer = undefined
+  }
+}
+
+function clearHoverQuoteDelay(): void {
+  if (hoverQuoteDelayTimer) {
+    clearTimeout(hoverQuoteDelayTimer)
+    hoverQuoteDelayTimer = undefined
+  }
+}
+
+function startHideBubble(): void {
+  if (!bubbleShowing.value)
+    return
+  clearBubbleHideTimer()
+  bubbleShowing.value = false
+}
+
+function scheduleAutoHide(visibleMs: number, minVisibleMs: number): void {
+  clearBubbleHideTimer()
+  const shownAt = Date.now()
+  const runHide = (): void => {
+    const elapsed = Date.now() - shownAt
+    if (elapsed < minVisibleMs) {
+      bubbleHideTimer = setTimeout(runHide, minVisibleMs - elapsed)
+      return
+    }
+    startHideBubble()
+  }
+  bubbleHideTimer = setTimeout(runHide, visibleMs)
+}
+
+function scheduleBubble(payload: BubblePayload): void {
+  const kind = payload.kind
+  const timing = BUBBLE_TIMING[kind]
+  const visibleMs = payload.durationMs ?? timing.visible
+
+  if (bubbleShowDelayTimer && currentBubbleKind.value) {
+    if (bubblePriority(kind) < bubblePriority(currentBubbleKind.value))
+      return
+    clearBubbleShowDelay()
+  }
+
+  if (bubbleShowing.value && currentBubbleKind.value) {
+    if (bubblePriority(kind) < bubblePriority(currentBubbleKind.value))
+      return
+    bubbleText.value = payload.text
+    currentBubbleKind.value = kind
+    scheduleAutoHide(visibleMs, timing.minVisible)
+    return
+  }
+
+  clearBubbleShowDelay()
+  bubbleShowDelayTimer = setTimeout(() => {
+    bubbleShowDelayTimer = undefined
+    if (kind === 'hover' && state.value !== 'hover')
+      return
+    if (kind === 'click' && state.value !== 'clicked')
+      return
+    bubbleText.value = payload.text
+    currentBubbleKind.value = kind
+    bubbleShowing.value = true
+    scheduleAutoHide(visibleMs, timing.minVisible)
+  }, timing.showDelay)
+}
+
+function dismissBubbleKinds(kinds: BubbleKind[], immediate = false): void {
+  if (!currentBubbleKind.value || !kinds.includes(currentBubbleKind.value))
+    return
+  clearBubbleShowDelay()
+  if (immediate)
+    startHideBubble()
+  else
+    scheduleAutoHide(500, 0)
+}
 
 function syncOverlaySize(): void {
   if (dragging.value)
     return
-  const extra = bubbleText.value ? BUBBLE_BAR_HEIGHT : 0
-  window.deskpet.resize(displayW.value, displayH.value + extra)
+  window.deskpet.resize(displayW.value, displayH.value + BUBBLE_BAR_HEIGHT)
 }
 
-function clearBubbleTimer(): void {
-  if (bubbleTimer) {
-    clearTimeout(bubbleTimer)
-    bubbleTimer = undefined
-  }
-}
-
-function showBubble(text: string, durationMs: number): void {
-  bubbleText.value = text
-  clearBubbleTimer()
-  bubbleTimer = setTimeout(() => {
+function onBubbleAfterLeave(): void {
+  if (!bubbleShowing.value) {
     bubbleText.value = ''
-    bubbleTimer = undefined
-    syncOverlaySize()
-  }, durationMs)
-  syncOverlaySize()
+    currentBubbleKind.value = null
+  }
 }
 
 function maxEdge(): number {
@@ -96,7 +183,14 @@ function alphaAt(x: number, y: number): number {
 }
 
 function localPoint(e: PointerEvent): { x: number, y: number } {
-  return { x: e.clientX, y: e.clientY }
+  const el = imgRef.value
+  if (!el)
+    return { x: 0, y: 0 }
+  const rect = el.getBoundingClientRect()
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top,
+  }
 }
 
 function isSolid(e: PointerEvent): boolean {
@@ -105,8 +199,13 @@ function isSolid(e: PointerEvent): boolean {
 }
 
 function isInsideImage(e: PointerEvent): boolean {
-  const p = localPoint(e)
-  return p.x >= 0 && p.y >= 0 && p.x < displayW.value && p.y < displayH.value
+  const el = imgRef.value
+  if (!el)
+    return false
+  const rect = el.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+  return x >= 0 && y >= 0 && x < rect.width && y < rect.height
 }
 
 function updateOverSolid(e: PointerEvent): void {
@@ -203,10 +302,11 @@ async function applyImageSize(url: string): Promise<void> {
   img.src = url
   await img.decode()
   const { w, h } = fitSize(img.naturalWidth, img.naturalHeight)
+  if (dragging.value)
+    return
   displayW.value = w
   displayH.value = h
-  if (!dragging.value)
-    syncOverlaySize()
+  syncOverlaySize()
 }
 
 watch(src, (url) => {
@@ -246,8 +346,6 @@ function onPointerMove(e: PointerEvent): void {
     return
   if (lastOverSolid) {
     clearHoverIdleTimer()
-    if (state.value !== 'hover')
-      window.deskpet.notifyPlayQuote('hover')
     state.value = 'hover'
   }
   else {
@@ -279,6 +377,8 @@ async function onPointerUp(e: PointerEvent): Promise<void> {
     dragging.value = false
     lastOverSolid = true
     state.value = 'hover'
+    if (src.value)
+      void applyImageSize(src.value)
     return
   }
 
@@ -293,7 +393,10 @@ async function onPointerUp(e: PointerEvent): Promise<void> {
   }
   clearClickedTimer()
   state.value = 'clicked'
-  window.deskpet.notifyPlayQuote('click')
+  setTimeout(() => {
+    if (state.value === 'clicked')
+      window.deskpet.notifyPlayQuote('click')
+  }, CLICK_QUOTE_DELAY_MS)
   const duration = pet.value?.durationsMs.clicked ?? CLICKED_STATIC_MS
   clickedTimer = setTimeout(() => {
     if (state.value === 'clicked')
@@ -315,10 +418,27 @@ let offPet: (() => void) | undefined
 
 watch(state, (s, prev) => {
   window.deskpet.reportPetState(s)
-  if (s === 'dragging' || s === 'clicked')
-    return
-  if (prev === 'dragging' && s === 'hover')
-    window.deskpet.notifyPlayQuote('hover')
+
+  if (s === 'hover' && prev !== 'hover') {
+    clearHoverQuoteDelay()
+    hoverQuoteDelayTimer = setTimeout(() => {
+      hoverQuoteDelayTimer = undefined
+      if (state.value === 'hover')
+        window.deskpet.notifyPlayQuote('hover')
+    }, HOVER_QUOTE_DELAY_MS)
+  }
+  if (s !== 'hover') {
+    clearHoverQuoteDelay()
+    dismissBubbleKinds(['hover'], true)
+  }
+
+  if (s === 'dragging') {
+    clearBubbleShowDelay()
+    dismissBubbleKinds(['hover', 'click', 'idle'], true)
+  }
+  else if (s === 'clicked') {
+    dismissBubbleKinds(['hover', 'idle'], true)
+  }
 })
 
 onMounted(() => {
@@ -331,9 +451,7 @@ onMounted(() => {
     if (next)
       pet.value = next
   })
-  offBubble = window.deskpet.onBubbleShow(({ text, durationMs }) => {
-    showBubble(text, durationMs)
-  })
+  offBubble = window.deskpet.onBubbleShow(payload => scheduleBubble(payload))
   window.deskpet.reportPetState(state.value)
   window.addEventListener('pointermove', onPointerMove)
   window.addEventListener('pointerup', onPointerUp)
@@ -344,7 +462,9 @@ onMounted(() => {
 onUnmounted(() => {
   offPet?.()
   offBubble?.()
-  clearBubbleTimer()
+  clearBubbleShowDelay()
+  clearBubbleHideTimer()
+  clearHoverQuoteDelay()
   window.removeEventListener('pointermove', onPointerMove)
   window.removeEventListener('pointerup', onPointerUp)
   window.removeEventListener('pointerleave', onWindowPointerLeave)
@@ -356,13 +476,19 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center pointer-events-none">
+  <div class="pet-root flex flex-col items-center pointer-events-none">
     <div
-      v-if="bubbleText"
-      class="text-xs text-neutral-800 leading-snug px-2.5 py-1.5 rounded-lg bg-white/95 shadow-md border border-neutral-200/80 max-w-[280px] text-center mb-1 pointer-events-none"
-      :style="{ minHeight: `${BUBBLE_BAR_HEIGHT - 8}px` }"
+      class="speech-bubble-slot pointer-events-none"
+      :style="{ height: `${BUBBLE_BAR_HEIGHT}px` }"
     >
-      {{ bubbleText }}
+      <Transition name="bubble" @after-leave="onBubbleAfterLeave">
+        <div v-if="bubbleShowing" class="speech-bubble">
+          <p class="speech-bubble__text">
+            {{ bubbleText }}
+          </p>
+          <span class="speech-bubble__tail" aria-hidden="true" />
+        </div>
+      </Transition>
     </div>
     <img
       v-if="src"
@@ -371,9 +497,76 @@ onUnmounted(() => {
       alt=""
       :width="displayW"
       :height="displayH"
-      class="block pointer-events-auto"
+      class="pet-img block pointer-events-auto"
+      :class="{ 'pet-img--clicked': state === 'clicked' }"
       @pointerdown="onPointerDown"
       @contextmenu="onContextMenu"
     >
   </div>
 </template>
+
+<style scoped>
+.pet-root {
+  --bubble-bg: #fffef9;
+  --bubble-border: rgb(0 0 0 / 8%);
+}
+
+.speech-bubble-slot {
+  display: flex;
+  width: 100%;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.speech-bubble {
+  position: relative;
+  max-width: min(280px, 92vw);
+  margin-bottom: 2px;
+  filter: drop-shadow(0 3px 10px rgb(0 0 0 / 12%));
+}
+
+.speech-bubble__text {
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #3d3d3d;
+  text-align: center;
+  background: linear-gradient(180deg, #fff 0%, var(--bubble-bg) 100%);
+  border: 1px solid var(--bubble-border);
+  border-radius: 16px;
+}
+
+.speech-bubble__tail {
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: -6px auto 0;
+  background: var(--bubble-bg);
+  border-right: 1px solid var(--bubble-border);
+  border-bottom: 1px solid var(--bubble-border);
+  transform: rotate(45deg);
+}
+
+.bubble-enter-active,
+.bubble-leave-active {
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
+}
+
+.bubble-enter-from,
+.bubble-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(0.94);
+}
+
+.pet-img {
+  transform-origin: center bottom;
+  transition: transform 0.12s ease-out;
+}
+
+.pet-img--clicked {
+  transform: scale(1.05);
+}
+</style>

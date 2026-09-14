@@ -1,6 +1,6 @@
 import type { InteractionConfig, PlayQuoteKind } from '@shared/interaction'
+import type { BubbleKind } from '@shared/interaction'
 import {
-  DEFAULT_BUBBLE_DURATION_MS,
   pickRandomLine,
 } from '@shared/interaction'
 import type { BrowserWindow } from 'electron'
@@ -31,21 +31,25 @@ function getWin(): BrowserWindow | null {
   return null
 }
 
-function canShowBubble(): boolean {
-  return petState !== 'dragging' && petState !== 'clicked'
+function canShowBubble(allowClicked = false): boolean {
+  if (petState === 'dragging')
+    return false
+  if (petState === 'clicked' && !allowClicked)
+    return false
+  return true
 }
 
-function sendBubble(text: string, durationMs = DEFAULT_BUBBLE_DURATION_MS): void {
+function sendBubble(text: string, kind: BubbleKind): void {
   const win = getWin()
   if (!win)
     return
-  win.webContents.send('bubble:show', { text, durationMs })
+  win.webContents.send('bubble:show', { text, kind })
 }
 
 function flushPendingReminder(): void {
   if (!pendingReminderText || !canShowBubble())
     return
-  sendBubble(pendingReminderText)
+  sendBubble(pendingReminderText, 'reminder')
   pendingReminderText = null
   lastReminderAt = Date.now()
 }
@@ -55,7 +59,7 @@ function queueOrShowReminder(text: string): void {
     pendingReminderText = text
     return
   }
-  sendBubble(text)
+  sendBubble(text, 'reminder')
   lastReminderAt = Date.now()
 }
 
@@ -86,7 +90,7 @@ function tickIdleQuote(): void {
     return
   if (!canShowBubble())
     return
-  sendBubble(line)
+  sendBubble(line, 'idle')
   lastIdleQuoteAt = Date.now()
 }
 
@@ -132,9 +136,9 @@ export function onPlayQuoteEvent(kind: PlayQuoteKind): void {
   }
   const pool = kind === 'click' ? config.clickQuotes : config.hoverQuotes
   const line = pickRandomLine(pool)
-  if (!line || !canShowBubble())
+  if (!line || !canShowBubble(kind === 'click'))
     return
-  sendBubble(line, 6000)
+  sendBubble(line, kind === 'click' ? 'click' : 'hover')
 }
 
 export function pauseReminders30Minutes(): void {
