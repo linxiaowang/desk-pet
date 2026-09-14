@@ -1,4 +1,5 @@
-import type { LoadedPetPayload } from '@shared/pet'
+import type { BubblePayload, InteractionConfig, PlayQuoteKind } from '@shared/interaction'
+import type { LoadedPetPayload, PetState } from '@shared/pet'
 import type { PetEditorDetail, PickImageResult, SavePetInput, SettingsSnapshot } from '@shared/settings'
 import type { UpdateCheckResult } from '@shared/update'
 
@@ -20,4 +21,9 @@ export interface DeskpetApi {
   setMaxPetEdge: (value: number) => Promise<void>
   checkForUpdates: () => Promise<UpdateCheckResult>
   openReleasePage: () => Promise<void>
+  getInteractionConfig: () => Promise<InteractionConfig>
+  saveInteractionConfig: (config: InteractionConfig) => Promise<InteractionConfig>
+  reportPetState: (state: PetState) => void
+  notifyPlayQuote: (kind: PlayQuoteKind) => void
+  onBubbleShow: (cb: (payload: BubblePayload) => void) => () => void
 }

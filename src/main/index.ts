@@ -6,6 +6,14 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron'
 import { appIconPath, applyAppIcon } from './app-icon'
 import { readPersist, writePersist } from './config'
 import { bundledPetsDir, ensureUserPetsDir, listPets, loadPetById, toPayload } from './pets'
+import {
+  bindInteractionOverlay,
+  isPlayQuotesMuted,
+  pauseReminders30Minutes,
+  registerInteractionIpc,
+  startInteractionService,
+  togglePlayQuotesMuted,
+} from './interaction'
 import { openSettingsWindow, registerSettingsIpc } from './settings-window'
 import { checkForUpdates, setupAutoUpdater } from './updater'
 
@@ -114,6 +122,15 @@ function buildMenu(): Electron.Menu {
       },
     },
     { type: 'separator' },
+    {
+      label: '暂停提醒 30 分钟',
+      click: () => pauseReminders30Minutes(),
+    },
+    {
+      label: isPlayQuotesMuted() ? '开启玩耍台词' : '静音玩耍台词',
+      click: () => togglePlayQuotesMuted(),
+    },
+    { type: 'separator' },
     { label: '退出', click: () => app.quit() },
   ])
 }
@@ -177,6 +194,8 @@ app.whenReady().then(() => {
   ensureUserPetsDir()
   applyAppIcon()
   registerSettingsIpc(settingsHost)
+  registerInteractionIpc()
+  startInteractionService()
 
   ipcMain.handle('pet:get', () => {
     const pet = loadPetById(currentPetId) ?? loadPetById('bundled/default')
@@ -242,6 +261,8 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+  if (win)
+    bindInteractionOverlay(win)
   setupAutoUpdater()
 })
 

@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import type { PetState } from '@shared/pet'
 import type { PetEditorDetail } from '@shared/settings'
+import InteractionSettingsPanel from '~/components/InteractionSettingsPanel.vue'
 import { DEFAULT_MAX_PET_EDGE, PET_STATE_LABELS, PET_STATES } from '@shared/pet'
 import { computed, onMounted, reactive, ref } from 'vue'
+
+type SettingsTab = 'pets' | 'interaction' | 'general'
+
+const settingsTab = ref<SettingsTab>('pets')
 
 const pets = ref<{ id: string, name: string }[]>([])
 const activePetId = ref('')
@@ -154,13 +159,90 @@ onMounted(async () => {
 
 <template>
   <div class="text-neutral-900 bg-neutral-100 min-h-screen">
-    <header class="px-5 py-4 border-b border-neutral-200 bg-white">
+    <header class="px-5 py-4 border-b border-neutral-200 bg-white space-y-3">
       <h1 class="text-lg font-semibold">
         DeskPet 设置
       </h1>
+      <nav class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="text-sm px-3 py-1.5 rounded-lg"
+          :class="settingsTab === 'pets' ? 'bg-teal-600 text-white' : 'border border-neutral-300 hover:bg-neutral-50'"
+          @click="settingsTab = 'pets'"
+        >
+          宠物
+        </button>
+        <button
+          type="button"
+          class="text-sm px-3 py-1.5 rounded-lg"
+          :class="settingsTab === 'interaction' ? 'bg-teal-600 text-white' : 'border border-neutral-300 hover:bg-neutral-50'"
+          @click="settingsTab = 'interaction'"
+        >
+          互动
+        </button>
+        <button
+          type="button"
+          class="text-sm px-3 py-1.5 rounded-lg"
+          :class="settingsTab === 'general' ? 'bg-teal-600 text-white' : 'border border-neutral-300 hover:bg-neutral-50'"
+          @click="settingsTab = 'general'"
+        >
+          通用
+        </button>
+      </nav>
     </header>
 
-    <main class="p-5 gap-5 grid lg:grid-cols-[220px_1fr]">
+    <main v-if="settingsTab === 'interaction'" class="p-5">
+      <section class="p-4 border border-neutral-200 rounded-xl bg-white max-w-2xl">
+        <InteractionSettingsPanel />
+      </section>
+    </main>
+
+    <main v-else-if="settingsTab === 'general'" class="p-5">
+      <section class="p-4 border border-neutral-200 rounded-xl bg-white max-w-lg space-y-4">
+        <label class="text-sm block">
+          <span class="text-neutral-600 mb-2 block">宠物大小（最长边 {{ maxPetEdge }}px）</span>
+          <input
+            v-model.number="maxPetEdge"
+            type="range"
+            min="64"
+            max="256"
+            step="8"
+            class="w-full"
+            @change="onScaleInput"
+          >
+        </label>
+        <div class="pt-4 border-t border-neutral-200">
+          <p class="text-sm font-medium text-neutral-800 mb-2">
+            软件更新
+          </p>
+          <p class="text-xs text-neutral-500 mb-3">
+            当前版本 {{ appVersion || '—' }}
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="text-sm px-3 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
+              :disabled="checkingUpdate"
+              @click="onCheckUpdate"
+            >
+              {{ checkingUpdate ? '检查中…' : '检查更新' }}
+            </button>
+            <button
+              type="button"
+              class="text-sm text-teal-800 px-3 py-2 border border-teal-200 rounded-lg hover:bg-teal-50"
+              @click="onOpenReleasePage"
+            >
+              打开下载页
+            </button>
+          </div>
+        </div>
+        <p v-if="status" class="text-sm text-neutral-600">
+          {{ status }}
+        </p>
+      </section>
+    </main>
+
+    <main v-else class="p-5 gap-5 grid lg:grid-cols-[220px_1fr]">
       <section class="p-3 border border-neutral-200 rounded-xl bg-white">
         <div class="mb-2 flex items-center justify-between">
           <h2 class="text-sm font-medium">
@@ -266,48 +348,6 @@ onMounted(async () => {
             </button>
           </div>
         </template>
-
-        <div class="pt-4 border-t border-neutral-200">
-          <div class="mb-4 flex flex-wrap gap-2 items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-neutral-800">
-                软件更新
-              </p>
-              <p class="text-xs text-neutral-500 mt-0.5">
-                当前版本 {{ appVersion || '—' }} · 未签名，Mac 可能需手动下载 DMG
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <button
-                type="button"
-                class="text-sm px-3 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
-                :disabled="checkingUpdate"
-                @click="onCheckUpdate"
-              >
-                {{ checkingUpdate ? '检查中…' : '检查更新' }}
-              </button>
-              <button
-                type="button"
-                class="text-sm text-teal-800 px-3 py-2 border border-teal-200 rounded-lg hover:bg-teal-50"
-                @click="onOpenReleasePage"
-              >
-                打开下载页
-              </button>
-            </div>
-          </div>
-          <label class="text-sm block">
-            <span class="text-neutral-600 mb-2 block">宠物大小（最长边 {{ maxPetEdge }}px）</span>
-            <input
-              v-model.number="maxPetEdge"
-              type="range"
-              min="64"
-              max="256"
-              step="8"
-              class="w-full"
-              @change="onScaleInput"
-            >
-          </label>
-        </div>
 
         <p v-if="status" class="text-sm text-neutral-600">
           {{ status }}

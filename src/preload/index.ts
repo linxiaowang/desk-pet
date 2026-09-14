@@ -1,4 +1,5 @@
 import type { DeskpetApi } from '../shared/api'
+import type { BubblePayload } from '../shared/interaction'
 import type { LoadedPetPayload } from '../shared/pet'
 import { contextBridge, ipcRenderer } from 'electron'
 
@@ -36,6 +37,15 @@ const api: DeskpetApi = {
   setMaxPetEdge: value => ipcRenderer.invoke('settings:setMaxPetEdge', value),
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
   openReleasePage: () => ipcRenderer.invoke('update:openReleasePage'),
+  getInteractionConfig: () => ipcRenderer.invoke('interaction:getConfig'),
+  saveInteractionConfig: config => ipcRenderer.invoke('interaction:saveConfig', config),
+  reportPetState: state => ipcRenderer.send('interaction:setPetState', state),
+  notifyPlayQuote: kind => ipcRenderer.send('interaction:playEvent', kind),
+  onBubbleShow: (cb) => {
+    const handler = (_e: Electron.IpcRendererEvent, payload: BubblePayload) => cb(payload)
+    ipcRenderer.on('bubble:show', handler)
+    return () => ipcRenderer.removeListener('bubble:show', handler)
+  },
 }
 
 contextBridge.exposeInMainWorld('deskpet', api)

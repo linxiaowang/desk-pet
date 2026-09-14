@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { LoadedPetPayload, PetState } from '@shared/pet'
+import { BUBBLE_BAR_HEIGHT } from '@shared/interaction'
 import { ALPHA_HIT_THRESHOLD, CLICKED_STATIC_MS, DEFAULT_MAX_PET_EDGE, DRAG_THRESHOLD_PX } from '@shared/pet'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
@@ -9,6 +10,7 @@ const dragging = ref(false)
 const imgRef = ref<HTMLImageElement | null>(null)
 const displayW = ref(128)
 const displayH = ref(128)
+const bubbleText = ref('')
 
 const src = computed(() => {
   if (!pet.value)
@@ -28,6 +30,33 @@ const WINDOW_LEAVE_DEBOUNCE_MS = 64
 let lastOverSolid = false
 let ignoreMouseApplied: boolean | null = null
 let raf = 0
+let bubbleTimer: ReturnType<typeof setTimeout> | undefined
+let offBubble: (() => void) | undefined
+
+function syncOverlaySize(): void {
+  if (dragging.value)
+    return
+  const extra = bubbleText.value ? BUBBLE_BAR_HEIGHT : 0
+  window.deskpet.resize(displayW.value, displayH.value + extra)
+}
+
+function clearBubbleTimer(): void {
+  if (bubbleTimer) {
+    clearTimeout(bubbleTimer)
+    bubbleTimer = undefined
+  }
+}
+
+function showBubble(text: string, durationMs: number): void {
+  bubbleText.value = text
+  clearBubbleTimer()
+  bubbleTimer = setTimeout(() => {
+    bubbleText.value = ''
+    bubbleTimer = undefined
+    syncOverlaySize()
+  }, durationMs)
+  syncOverlaySize()
+}
 
 function maxEdge(): number {
   return pet.value?.maxPetEdge ?? DEFAULT_MAX_PET_EDGE
@@ -177,7 +206,7 @@ async function applyImageSize(url: string): Promise<void> {
   displayW.value = w
   displayH.value = h
   if (!dragging.value)
-    window.deskpet.resize(w, h)
+    syncOverlaySize()
 }
 
 watch(src, (url) => {
@@ -217,6 +246,8 @@ function onPointerMove(e: PointerEvent): void {
     return
   if (lastOverSolid) {
     clearHoverIdleTimer()
+    if (state.value !== 'hover')
+      window.deskpet.notifyPlayQuote('hover')
     state.value = 'hover'
   }
   else {
@@ -262,6 +293,7 @@ async function onPointerUp(e: PointerEvent): Promise<void> {
   }
   clearClickedTimer()
   state.value = 'clicked'
+  window.deskpet.notifyPlayQuote('click')
   const duration = pet.value?.durationsMs.clicked ?? CLICKED_STATIC_MS
   clickedTimer = setTimeout(() => {
     if (state.value === 'clicked')
@@ -281,6 +313,14 @@ function loop(): void {
 
 let offPet: (() => void) | undefined
 
+watch(state, (s, prev) => {
+  window.deskpet.reportPetState(s)
+  if (s === 'dragging' || s === 'clicked')
+    return
+  if (prev === 'dragging' && s === 'hover')
+    window.deskpet.notifyPlayQuote('hover')
+})
+
 onMounted(() => {
   offPet = window.deskpet.onPetLoaded((next) => {
     pet.value = next
@@ -291,6 +331,10 @@ onMounted(() => {
     if (next)
       pet.value = next
   })
+  offBubble = window.deskpet.onBubbleShow(({ text, durationMs }) => {
+    showBubble(text, durationMs)
+  })
+  window.deskpet.reportPetState(state.value)
   window.addEventListener('pointermove', onPointerMove)
   window.addEventListener('pointerup', onPointerUp)
   window.addEventListener('pointerleave', onWindowPointerLeave)
@@ -299,6 +343,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   offPet?.()
+  offBubble?.()
+  clearBubbleTimer()
   window.removeEventListener('pointermove', onPointerMove)
   window.removeEventListener('pointerup', onPointerUp)
   window.removeEventListener('pointerleave', onWindowPointerLeave)
@@ -310,15 +356,24 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <img
-    v-if="src"
-    ref="imgRef"
-    :src="src"
-    alt=""
-    :width="displayW"
-    :height="displayH"
-    class="block"
-    @pointerdown="onPointerDown"
-    @contextmenu="onContextMenu"
-  >
+  <div class="flex flex-col items-center pointer-events-none">
+    <div
+      v-if="bubbleText"
+      class="text-xs text-neutral-800 leading-snug px-2.5 py-1.5 rounded-lg bg-white/95 shadow-md border border-neutral-200/80 max-w-[280px] text-center mb-1 pointer-events-none"
+      :style="{ minHeight: `${BUBBLE_BAR_HEIGHT - 8}px` }"
+    >
+      {{ bubbleText }}
+    </div>
+    <img
+      v-if="src"
+      ref="imgRef"
+      :src="src"
+      alt=""
+      :width="displayW"
+      :height="displayH"
+      class="block pointer-events-auto"
+      @pointerdown="onPointerDown"
+      @contextmenu="onContextMenu"
+    >
+  </div>
 </template>
