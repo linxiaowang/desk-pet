@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen } from 'electron'
 import { appIconPath, applyAppIcon } from './app-icon'
 import { readPersist, writePersist } from './config'
-import { bundledPetsDir, ensureUserPetsDir, listPets, loadPetById, toPayload } from './pets'
 import {
   bindInteractionOverlay,
   isPlayQuotesMuted,
@@ -14,6 +13,7 @@ import {
   startInteractionService,
   togglePlayQuotesMuted,
 } from './interaction'
+import { bundledPetsDir, ensureUserPetsDir, listPets, loadPetById, toPayload } from './pets'
 import { openSettingsWindow, registerSettingsIpc } from './settings-window'
 import { checkForUpdates, setupAutoUpdater } from './updater'
 

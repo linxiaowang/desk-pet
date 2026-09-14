@@ -1,5 +1,5 @@
-import type { UpdateCheckResult } from '@shared/update'
 import type { SavePetInput, SettingsSnapshot } from '@shared/settings'
+import type { UpdateCheckResult } from '@shared/update'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'

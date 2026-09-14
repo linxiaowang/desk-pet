@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { LoadedPetPayload, PetState } from '@shared/pet'
 import type { BubbleKind, BubblePayload } from '@shared/interaction'
+import type { LoadedPetPayload, PetState } from '@shared/pet'
 import { BUBBLE_BAR_HEIGHT, BUBBLE_TIMING } from '@shared/interaction'
 import { ALPHA_HIT_THRESHOLD, CLICKED_STATIC_MS, DEFAULT_MAX_PET_EDGE, DRAG_THRESHOLD_PX } from '@shared/pet'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -476,7 +476,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="pet-root flex flex-col items-center pointer-events-none">
+  <div class="pet-root flex flex-col pointer-events-none items-center">
     <div
       class="speech-bubble-slot pointer-events-none"
       :style="{ height: `${BUBBLE_BAR_HEIGHT}px` }"

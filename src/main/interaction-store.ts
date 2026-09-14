@@ -1,8 +1,8 @@
 import type { InteractionConfig } from '@shared/interaction'
-import { DEFAULT_INTERACTION } from '@shared/interaction'
+import type { PetState } from '@shared/pet'
 import fs from 'node:fs'
 import path from 'node:path'
-import type { PetState } from '@shared/pet'
+import { DEFAULT_INTERACTION } from '@shared/interaction'
 import { app } from 'electron'
 
 function configPath(): string {

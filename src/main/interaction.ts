@@ -1,11 +1,10 @@
-import type { InteractionConfig, PlayQuoteKind } from '@shared/interaction'
-import type { BubbleKind } from '@shared/interaction'
+import type { BubbleKind, InteractionConfig, PlayQuoteKind } from '@shared/interaction'
+import type { BrowserWindow } from 'electron'
+import type { PetActivityState } from './interaction-store'
 import {
   pickRandomLine,
 } from '@shared/interaction'
-import type { BrowserWindow } from 'electron'
 import { ipcMain } from 'electron'
-import type { PetActivityState } from './interaction-store'
 import {
   clampInteractionConfig,
   readInteractionConfig,
