@@ -25,6 +25,16 @@
 | macOS | [DeskPet-Mac.dmg](https://github.com/linxiaowang/desk-pet/releases/latest/download/DeskPet-Mac.dmg) | 打开 DMG，拖入「应用程序」 |
 | Windows | [DeskPet-Windows.exe](https://github.com/linxiaowang/desk-pet/releases/latest/download/DeskPet-Windows.exe) | 安装版（一键安装）；应用内可自动检查更新 |
 
+### macOS 提示「已损坏，无法打开」
+
+从未签名应用常见，**不是安装包坏了**。先点 **取消**（不要移到废纸篓），在终端执行：
+
+```bash
+xattr -cr /Applications/DeskPet.app
+```
+
+若 app 不在「应用程序」，把路径改成实际位置。然后双击打开，或 **右键 → 打开 → 仍要打开**。
+
 也可以打开 **[Releases 页面](https://github.com/linxiaowang/desk-pet/releases/latest)** 查看版本说明与历史版本。
 
 > 安装包**未做代码签名**。macOS 可能提示「无法验证开发者」，自动更新可能失败，需手动下载 DMG；Windows 可能触发 SmartScreen，需选择仍要打开。应用内更新在 Windows 上通常可用。
