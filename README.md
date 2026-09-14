@@ -23,18 +23,19 @@
 | 平台 | 安装包 | 说明 |
 |------|--------|------|
 | macOS | [DeskPet-Mac.dmg](https://github.com/linxiaowang/desk-pet/releases/latest/download/DeskPet-Mac.dmg) | 打开 DMG，拖入「应用程序」 |
-| Windows | [DeskPet-Windows.exe](https://github.com/linxiaowang/desk-pet/releases/latest/download/DeskPet-Windows.exe) | 便携版，双击运行 |
+| Windows | [DeskPet-Windows.exe](https://github.com/linxiaowang/desk-pet/releases/latest/download/DeskPet-Windows.exe) | 安装版（一键安装）；应用内可自动检查更新 |
 
 也可以打开 **[Releases 页面](https://github.com/linxiaowang/desk-pet/releases/latest)** 查看版本说明与历史版本。
 
-> 安装包**未做代码签名**。macOS 可能提示「无法验证开发者」；Windows 可能触发 SmartScreen，需选择仍要打开。仅建议自用或信任来源的测试。
+> 安装包**未做代码签名**。macOS 可能提示「无法验证开发者」，自动更新可能失败，需手动下载 DMG；Windows 可能触发 SmartScreen，需选择仍要打开。应用内更新在 Windows 上通常可用。
 
 ## 使用
 
 1. 启动后，宠物浮在桌面最上层，可拖动、点击切换动作。  
 2. **右键宠物** → **设置…**：换宠物、为各状态选图、调整大小。  
 3. **右键** → **选择宠物**：快速切换已保存的宠物。  
-4. **右键** → **退出**：关闭应用。
+4. **右键** → **检查更新…** 或在 **设置** 底部检查更新（Windows 可后台下载并重启安装；Mac 未签名时建议用「打开下载页」）。  
+5. **右键** → **退出**：关闭应用。
 
 ### 自定义宠物（无需 JSON）
 

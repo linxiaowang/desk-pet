@@ -7,6 +7,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 const pets = ref<{ id: string, name: string }[]>([])
 const activePetId = ref('')
 const maxPetEdge = ref(DEFAULT_MAX_PET_EDGE)
+const appVersion = ref('')
 
 const selectedId = ref<string | null>(null)
 const isNew = ref(false)
@@ -17,6 +18,7 @@ const stateFiles = reactive<Partial<Record<PetState, string>>>({})
 
 const status = ref('')
 const saving = ref(false)
+const checkingUpdate = ref(false)
 
 const canSave = computed(() => {
   if (!editorName.value.trim())
@@ -33,6 +35,7 @@ async function refreshList(): Promise<void> {
   pets.value = snap.pets
   activePetId.value = snap.activePetId
   maxPetEdge.value = snap.maxPetEdge
+  appVersion.value = snap.appVersion
 }
 
 async function loadEditor(id: string): Promise<void> {
@@ -124,6 +127,22 @@ async function deletePet(): Promise<void> {
 async function onScaleInput(): Promise<void> {
   await window.deskpet.setMaxPetEdge(maxPetEdge.value)
   status.value = '已调整大小'
+}
+
+async function onCheckUpdate(): Promise<void> {
+  checkingUpdate.value = true
+  status.value = ''
+  try {
+    const result = await window.deskpet.checkForUpdates()
+    status.value = result.message || (result.ok ? '检查完成' : '检查失败')
+  }
+  finally {
+    checkingUpdate.value = false
+  }
+}
+
+async function onOpenReleasePage(): Promise<void> {
+  await window.deskpet.openReleasePage()
 }
 
 onMounted(async () => {
@@ -249,6 +268,33 @@ onMounted(async () => {
         </template>
 
         <div class="pt-4 border-t border-neutral-200">
+          <div class="mb-4 flex flex-wrap gap-2 items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-neutral-800">
+                软件更新
+              </p>
+              <p class="text-xs text-neutral-500 mt-0.5">
+                当前版本 {{ appVersion || '—' }} · 未签名，Mac 可能需手动下载 DMG
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="text-sm px-3 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
+                :disabled="checkingUpdate"
+                @click="onCheckUpdate"
+              >
+                {{ checkingUpdate ? '检查中…' : '检查更新' }}
+              </button>
+              <button
+                type="button"
+                class="text-sm text-teal-800 px-3 py-2 border border-teal-200 rounded-lg hover:bg-teal-50"
+                @click="onOpenReleasePage"
+              >
+                打开下载页
+              </button>
+            </div>
+          </div>
           <label class="text-sm block">
             <span class="text-neutral-600 mb-2 block">宠物大小（最长边 {{ maxPetEdge }}px）</span>
             <input

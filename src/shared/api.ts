@@ -1,5 +1,6 @@
 import type { LoadedPetPayload } from '@shared/pet'
 import type { PetEditorDetail, PickImageResult, SavePetInput, SettingsSnapshot } from '@shared/settings'
+import type { UpdateCheckResult } from '@shared/update'
 
 export interface DeskpetApi {
   getPet: () => Promise<LoadedPetPayload | null>
@@ -17,4 +18,6 @@ export interface DeskpetApi {
   deletePet: (id: string) => Promise<void>
   setActivePet: (id: string) => Promise<void>
   setMaxPetEdge: (value: number) => Promise<void>
+  checkForUpdates: () => Promise<UpdateCheckResult>
+  openReleasePage: () => Promise<void>
 }

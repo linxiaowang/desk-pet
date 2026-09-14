@@ -16,17 +16,30 @@
       "to": "pets"
     }
   ],
+  "publish": {
+    "provider": "github",
+    "owner": "linxiaowang",
+    "repo": "desk-pet"
+  },
   "mac": {
     "identity": null,
+    "gatekeeperAssess": false,
+    "hardenedRuntime": false,
     "target": [
-      "dmg"
+      "dmg",
+      "zip"
     ],
     "artifactName": "${productName}-Mac.${ext}"
   },
   "win": {
     "target": [
-      "portable"
+      "nsis"
     ],
     "artifactName": "${productName}-Windows.${ext}"
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": false
   }
 }

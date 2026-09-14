@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@vueuse/core": "^14.4.0",
+    "electron-updater": "^6.8.9",
     "vue": "^3.5.22",
     "vue-router": "^4.6.4"
   },

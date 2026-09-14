@@ -4,6 +4,7 @@ export interface SettingsSnapshot {
   pets: PetListItem[]
   activePetId: string
   maxPetEdge: number
+  appVersion: string
 }
 
 export interface PetEditorDetail {

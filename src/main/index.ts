@@ -7,6 +7,7 @@ import { appIconPath, applyAppIcon } from './app-icon'
 import { readPersist, writePersist } from './config'
 import { bundledPetsDir, ensureUserPetsDir, listPets, loadPetById, toPayload } from './pets'
 import { openSettingsWindow, registerSettingsIpc } from './settings-window'
+import { checkForUpdates, setupAutoUpdater } from './updater'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -105,6 +106,12 @@ function buildMenu(): Electron.Menu {
     {
       label: '设置…',
       click: () => openSettingsWindow(settingsHost),
+    },
+    {
+      label: '检查更新…',
+      click: () => {
+        void checkForUpdates(true)
+      },
     },
     { type: 'separator' },
     { label: '退出', click: () => app.quit() },
@@ -235,6 +242,7 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+  setupAutoUpdater()
 })
 
 app.on('window-all-closed', () => {

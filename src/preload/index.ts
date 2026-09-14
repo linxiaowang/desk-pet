@@ -34,6 +34,8 @@ const api: DeskpetApi = {
   deletePet: id => ipcRenderer.invoke('settings:deletePet', id),
   setActivePet: id => ipcRenderer.invoke('settings:setActivePet', id),
   setMaxPetEdge: value => ipcRenderer.invoke('settings:setMaxPetEdge', value),
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  openReleasePage: () => ipcRenderer.invoke('update:openReleasePage'),
 }
 
 contextBridge.exposeInMainWorld('deskpet', api)

@@ -21,11 +21,16 @@ jobs:
           - os: macos-latest
             platform: mac
             builder_args: --mac
-            artifact: release/*.dmg
+            artifact: |
+              release/*.dmg
+              release/*.zip
+              release/latest-mac.yml
           - os: windows-latest
             platform: win
             builder_args: --win --x64
-            artifact: release/*.exe
+            artifact: |
+              release/*.exe
+              release/latest.yml
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout

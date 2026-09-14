@@ -1,8 +1,9 @@
+import type { UpdateCheckResult } from '@shared/update'
 import type { SavePetInput, SettingsSnapshot } from '@shared/settings'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { appIconPath } from './app-icon'
 import { getMaxPetEdge, setMaxPetEdge } from './config'
 import {
@@ -12,6 +13,7 @@ import {
   listPets,
   saveUserPet,
 } from './pets'
+import { checkForUpdates, openReleasePage } from './updater'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -74,6 +76,7 @@ export function registerSettingsIpc(host: SettingsHost): void {
     pets: listPets(),
     activePetId: host.getActivePetId(),
     maxPetEdge: getMaxPetEdge(),
+    appVersion: app.getVersion(),
   }))
 
   ipcMain.handle('settings:getPet', (_e, id: string) => getPetEditorDetail(id))
@@ -123,4 +126,8 @@ export function registerSettingsIpc(host: SettingsHost): void {
   ipcMain.handle('settings:openSettings', () => {
     openSettingsWindow(host)
   })
+
+  ipcMain.handle('update:check', (): Promise<UpdateCheckResult> => checkForUpdates(true))
+
+  ipcMain.handle('update:openReleasePage', () => openReleasePage())
 }
