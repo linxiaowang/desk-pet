@@ -1,6 +1,8 @@
 import type { UpdateCheckResult } from '@shared/update'
 import { app, dialog, shell } from 'electron'
-import { autoUpdater } from 'electron-updater'
+import electronUpdater from 'electron-updater'
+
+const { autoUpdater } = electronUpdater
 
 const RELEASE_PAGE = 'https://github.com/linxiaowang/desk-pet/releases/latest'
 
