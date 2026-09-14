@@ -110,7 +110,7 @@ function buildMenu(): Electron.Menu {
     {
       label: '检查更新…',
       click: () => {
-        void checkForUpdates(true)
+        void checkForUpdates(true, win ?? undefined)
       },
     },
     { type: 'separator' },

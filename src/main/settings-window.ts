@@ -127,7 +127,10 @@ export function registerSettingsIpc(host: SettingsHost): void {
     openSettingsWindow(host)
   })
 
-  ipcMain.handle('update:check', (): Promise<UpdateCheckResult> => checkForUpdates(true))
+  ipcMain.handle('update:check', (): Promise<UpdateCheckResult> => {
+    const parent = settingsWin && !settingsWin.isDestroyed() ? settingsWin : undefined
+    return checkForUpdates(true, parent)
+  })
 
   ipcMain.handle('update:openReleasePage', () => openReleasePage())
 }

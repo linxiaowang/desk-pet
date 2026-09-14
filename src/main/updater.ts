@@ -1,4 +1,5 @@
 import type { UpdateCheckResult } from '@shared/update'
+import type { BrowserWindow } from 'electron'
 import { app, dialog, shell } from 'electron'
 import electronUpdater from 'electron-updater'
 
@@ -7,6 +8,7 @@ const { autoUpdater } = electronUpdater
 const RELEASE_PAGE = 'https://github.com/linxiaowang/desk-pet/releases/latest'
 
 let startupCheckDone = false
+let checkInFlight: Promise<UpdateCheckResult> | null = null
 
 function currentVersion(): string {
   return app.getVersion()
@@ -18,6 +20,25 @@ function isDev(): boolean {
 
 function macUnsignedHint(): string {
   return '未签名的 Mac 版可能无法自动安装，请到 GitHub Releases 下载 DMG 手动更新。'
+}
+
+async function showManualDialog(
+  parent: BrowserWindow | undefined,
+  message: string,
+  detail?: string,
+  buttons: string[] = ['好'],
+): Promise<number> {
+  const opts: Electron.MessageBoxOptions = {
+    type: 'info',
+    title: 'DeskPet 更新',
+    message,
+    detail: detail?.trim() || undefined,
+    buttons,
+    defaultId: 0,
+  }
+  if (parent && !parent.isDestroyed())
+    return (await dialog.showMessageBox(parent, opts)).response
+  return (await dialog.showMessageBox(opts)).response
 }
 
 export function setupAutoUpdater(): void {
@@ -57,70 +78,89 @@ export function setupAutoUpdater(): void {
   }, 8_000)
 }
 
-export async function checkForUpdates(manual: boolean): Promise<UpdateCheckResult> {
+async function runUpdateCheck(manual: boolean, parent?: BrowserWindow): Promise<UpdateCheckResult> {
   const current = currentVersion()
 
   if (isDev()) {
+    const message = '开发模式下不检查更新。'
+    if (manual)
+      await showManualDialog(parent, message)
+    return { ok: true, message: manual ? message : '', currentVersion: current }
+  }
+
+  try {
+    const result = await autoUpdater.checkForUpdates()
+
+    if (result?.isUpdateAvailable) {
+      const latest = result.updateInfo.version
+      const message = `发现新版本 ${latest}，正在后台下载…`
+      if (manual) {
+        await showManualDialog(
+          parent,
+          message,
+          process.platform === 'darwin' ? macUnsignedHint() : undefined,
+        )
+      }
+      return {
+        ok: true,
+        message: manual ? message : '',
+        currentVersion: current,
+        latestVersion: latest,
+      }
+    }
+
+    const message = `当前已是最新版本（${current}）。`
+    if (manual)
+      await showManualDialog(parent, message)
     return {
       ok: true,
-      message: manual ? '开发模式下不检查更新。' : '',
+      message: manual ? message : '',
+      currentVersion: current,
+      latestVersion: result?.updateInfo?.version ?? current,
+    }
+  }
+  catch (err) {
+    const detail = err instanceof Error ? err.message : String(err)
+    if (manual) {
+      const response = await showManualDialog(
+        parent,
+        '自动检查更新失败',
+        `${detail}\n\n${process.platform === 'darwin' ? macUnsignedHint() : ''}`,
+        ['关闭', '打开下载页'],
+      )
+      if (response === 1)
+        void shell.openExternal(RELEASE_PAGE)
+    }
+    return {
+      ok: false,
+      message: manual ? `检查失败：${detail}` : '',
       currentVersion: current,
     }
   }
+}
 
-  return new Promise((resolve) => {
-    const done = (result: UpdateCheckResult) => {
-      autoUpdater.removeListener('update-not-available', onNone)
-      autoUpdater.removeListener('update-available', onAvailable)
-      autoUpdater.removeListener('error', onError)
-      resolve(result)
+export async function checkForUpdates(
+  manual: boolean,
+  parent?: BrowserWindow,
+): Promise<UpdateCheckResult> {
+  if (checkInFlight) {
+    const pending = await checkInFlight
+    if (manual && pending.message) {
+      await showManualDialog(parent, pending.message)
     }
-
-    const onNone = () => {
-      done({
-        ok: true,
-        message: manual ? `当前已是最新版本（${current}）。` : '',
-        currentVersion: current,
-      })
+    else if (manual && pending.ok) {
+      await showManualDialog(parent, `当前已是最新版本（${pending.currentVersion}）。`)
     }
+    return pending
+  }
 
-    const onAvailable = (info: { version: string }) => {
-      done({
-        ok: true,
-        message: manual ? `发现新版本 ${info.version}，正在后台下载…` : '',
-        currentVersion: current,
-        latestVersion: info.version,
-      })
-    }
-
-    const onError = (err: Error) => {
-      const detail = err.message
-      if (manual) {
-        void dialog.showMessageBox({
-          type: 'warning',
-          title: 'DeskPet 更新',
-          message: '自动检查更新失败',
-          detail: `${detail}\n\n${process.platform === 'darwin' ? macUnsignedHint() : ''}`.trim(),
-          buttons: ['关闭', '打开下载页'],
-          defaultId: 1,
-          cancelId: 0,
-        }).then(({ response }) => {
-          if (response === 1)
-            void shell.openExternal(RELEASE_PAGE)
-        })
-      }
-      done({
-        ok: false,
-        message: manual ? `检查失败：${detail}` : '',
-        currentVersion: current,
-      })
-    }
-
-    autoUpdater.once('update-not-available', onNone)
-    autoUpdater.once('update-available', onAvailable)
-    autoUpdater.once('error', onError)
-    void autoUpdater.checkForUpdates()
-  })
+  checkInFlight = runUpdateCheck(manual, parent)
+  try {
+    return await checkInFlight
+  }
+  finally {
+    checkInFlight = null
+  }
 }
 
 export async function openReleasePage(): Promise<void> {
